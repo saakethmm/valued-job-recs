@@ -123,6 +123,68 @@ You: "Based on your profile and today's constraints, here are my top 3:
 2. Provide details relevant to their question
 3. Relate back to their values/skills if relevant
 
+### 5. Surfacing Inferred Values & Reflection
+
+**Trigger**: Every ~10 feedback items, or when user asks for reflection
+
+**Purpose**: Help user discover their true preferences by analyzing patterns in their feedback. This bridges the gap between stated preferences (values.md) and revealed preferences (feedback history).
+
+**Steps**:
+1. Analyze feedback history in preferences.md
+2. Identify patterns:
+   - **Strong signals**: Consistent preferences across 5+ decisions
+   - **Conflicts**: Where choices diverge from stated values
+   - **Emerging preferences**: New patterns not in values.md
+3. Update the "Inferred Values" section in preferences.md
+4. Surface insights to user with specific questions
+5. If user confirms, offer to update values.md
+
+**Pattern types to look for**:
+
+| Pattern | Example | What it might mean |
+|---------|---------|-------------------|
+| Consistent choice | 7/8 positive signals were small companies | "Small team" is a true preference |
+| Contradiction | Applied to 3 roles below stated salary threshold | Mission may override compensation |
+| New theme | All liked roles have "direct user impact" | Add to values.md |
+| Stated but not acted on | Says "Bay Area preferred" but applied to 2 remote-only | Location may be flexible |
+
+**Example reflection prompt**:
+```
+"After 12 feedback sessions, I've noticed some patterns:
+
+Strong signals:
+- You consistently prefer AI safety/alignment roles (8/10 positive signals)
+- Small teams (<50 people) appear in all your applications
+
+Potential conflict:
+- values.md says '$150k+ salary' is a strong preference
+- But you applied to FAR.AI ($100-190k) citing 'perfect mission fit'
+- Suggestion: Mission may override compensation for high-alignment roles
+
+Emerging preference:
+- You've passed on 3 'ML infrastructure' roles saying 'too far from users'
+- This isn't in your values.md but seems important
+
+Questions:
+1. Should I add 'small team' to your strong preferences?
+2. Should I note that mission can override salary for safety-focused orgs?
+3. Should I add 'direct user/human impact' as a preference?"
+```
+
+**When to trigger**:
+- Automatically after every 10 new feedback items
+- When user asks: "What have you learned about my preferences?"
+- When user asks: "Reflect on my choices"
+- At the start of a session if it's been 2+ weeks since last reflection
+
+**Updating values.md**:
+Only update values.md when user explicitly confirms. Always ask first:
+```
+User: "Yes, add small teams to my preferences"
+You: [Edit values.md to add "Small teams (<50 people)" under Strong Preferences]
+     "Added to values.md. This will now factor into all future scoring."
+```
+
 ---
 
 ## Scoring Logic
@@ -168,6 +230,9 @@ Sort by adjusted_score descending, return top N.
 5. **Update preferences.md** when user provides feedback - don't just acknowledge, actually edit the file
 6. **Check for un-enriched jobs** before recommendations; offer to process them
 7. **Be concise** - user wants quick recommendations, not lengthy explanations
+8. **Track session stats** - increment counters in preferences.md after each session
+9. **Trigger reflection** after every 10 feedback items or 2+ weeks since last reflection
+10. **Only update values.md with explicit confirmation** - always ask before modifying stated values
 
 ---
 
@@ -196,4 +261,42 @@ You: [Add to Hard Filters in preferences.md] "Added to hard filters - defense co
 ```
 User: "Mission matters way more to me than skills match"
 You: [Adjust weights in preferences.md: mission 0.4→0.6, skills 0.3→0.2] "Updated weights - mission alignment now weighted at 60%, skills at 20%."
+```
+
+### Reflection / Inferred values
+```
+You: [After 10+ feedback items] "I've noticed some patterns in your choices:
+
+     Strong signal: You've favored small teams in 7/8 decisions.
+     Conflict: You applied to 2 roles below your $150k threshold - both AI safety focused.
+     Emerging: You passed on 3 'infrastructure' roles citing 'too far from users'.
+
+     Should I:
+     1. Add 'small teams' to your values.md?
+     2. Note that mission can override salary for safety roles?
+     3. Add 'direct user impact' as a preference?"
+
+User: "Yes to 1 and 3, not 2 - I still want high salary, those were exceptions"
+
+You: [Update values.md with small teams + direct user impact]
+     [Update preferences.md: add soft boost for AI safety orgs on salary flexibility, but don't change stated preference]
+     "Updated values.md with small teams and direct user impact. I've noted that AI safety orgs get more flexibility on salary, but kept your $150k+ as a strong preference."
+```
+
+### User asks for reflection
+```
+User: "What have you learned about my preferences?"
+You: [Analyze feedback history, update Inferred Values section]
+     "Based on 15 feedback items across 8 sessions:
+
+     Confirmed values (you act on what you stated):
+     - Mission alignment is paramount - you've never compromised on this
+     - You avoid manipulative tech (rejected 2 adtech-adjacent roles)
+
+     Revealed preferences (patterns in your choices):
+     - Research-adjacent > pure engineering (4/5 applications)
+     - Nonprofit/mission-driven orgs get more flexibility on salary
+
+     Open question:
+     - You said academic research isn't right, but you favor research-adjacent roles. What's the key difference for you?"
 ```
