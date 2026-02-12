@@ -11,6 +11,7 @@ This project helps surface job recommendations aligned with the user's values an
 | `values.md` | User's mission, motivations, non-negotiables | Every recommendation session |
 | `skills.md` | User's experience, technical skills | Every recommendation session |
 | `preferences.md` | Learned preferences from feedback | Every recommendation session |
+| `enrichment-schema.md` | Field definitions, options, scoring rubrics | When enriching jobs |
 | Notion DB | Job tracker with enriched data | When querying jobs |
 
 **Notion Database ID**: 19e65f6f0430804a8271fef3c979a741
@@ -60,30 +61,18 @@ You: "Based on your profile and today's constraints, here are my top 3:
 
 **Trigger**: User adds new jobs, or un-enriched jobs detected during recommendation
 
-**Steps**:
-1. Fetch the full job page from Notion
-2. Extract:
-   - Mission Summary (1-2 sentences)
-   - Required Skills (list)
-   - Company Stage (Startup/Growth/Enterprise)
-   - Remote OK (yes/no)
-3. Score against user profile:
-   - Mission Fit (1-5)
-   - Skills Match (1-5)
-4. Update Notion fields via the API
-5. Mark Enriched = true
+**Orchestration** (agent-per-job pattern to minimize context usage):
+1. Query Notion for unenriched job IDs only (don't fetch full pages)
+2. Spawn one Task agent per job — each agent independently:
+   - Reads `values.md`, `skills.md`, `enrichment-schema.md`
+   - Fetches that one job's full page from Notion
+   - Assesses all fields per the enrichment schema
+   - Updates the Notion page and sets `Enriched = true`
+3. Each agent is independent — no need to share job data across agents
 
-**What to extract for Mission Summary**:
-- What does the company do?
-- What is the role's purpose?
-- What impact does the work have?
+**Key**: Never load multiple job descriptions into one context. Each job's enrichment is self-contained.
 
-**Scoring rubric**:
-- 5: Perfect alignment with stated values/skills
-- 4: Strong alignment, minor gaps
-- 3: Moderate alignment
-- 2: Weak alignment, significant gaps
-- 1: Misaligned or contrary to values
+**See `enrichment-schema.md`** for field definitions, scoring rubrics, and the agent prompt template.
 
 ### 3. Capturing Feedback
 
